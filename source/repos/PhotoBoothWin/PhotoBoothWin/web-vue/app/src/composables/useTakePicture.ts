@@ -109,8 +109,8 @@ export function useTakePicture(selectedTemplate: () => Template | null) {
     let h: number
     try {
       const size = await loadFrameDimensions(url)
-      w = size.w
-      h = size.h
+      w = (size.w * 1.1)
+      h = (size.h * 1.1)
     } catch {
       const fallback = getTemplateCaptureSize()
       w = fallback.w
