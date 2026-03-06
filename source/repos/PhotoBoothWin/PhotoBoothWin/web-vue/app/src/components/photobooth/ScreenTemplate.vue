@@ -19,9 +19,6 @@ function onCardClick(t: Template) {
 }
 
 function confirmTemplate() {
-  // #region agent log
-  fetch('http://127.0.0.1:7242/ingest/60461173-9774-483b-a750-822bb1590c42', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ location: 'ScreenTemplate.vue:confirmTemplate', message: 'confirmTemplate_called', data: { hasSelection: !!selectedTemplate.value }, timestamp: Date.now(), sessionId: 'debug-session', hypothesisId: 'H1' }) }).catch(() => {})
-  // #endregion
   unlockCountdownAudio()
   msgboxVisible.value = false
   // 立即切到拍照頁；若仍用 nextTick 導致未切換，改同步呼叫確保進入拍攝畫面

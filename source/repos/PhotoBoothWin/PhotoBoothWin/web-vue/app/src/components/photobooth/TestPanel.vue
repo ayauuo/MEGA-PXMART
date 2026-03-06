@@ -80,11 +80,6 @@ function goTo(id: ScreenName) {
   if (id === 'template' || id === 'shoot' || id === 'camera-test' || id === 'test-filter' || id === 'result' || id === 'processing') {
     setTestSession(true)
   }
-  // #region agent log
-  if (id === 'template') {
-    fetch('http://127.0.0.1:7242/ingest/60461173-9774-483b-a750-822bb1590c42', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': 'b8574e' }, body: JSON.stringify({ sessionId: 'b8574e', location: 'TestPanel.vue:goTo', message: 'goTo_template_after_setTestSession', data: { id, isTestSession: isTestSession.value }, timestamp: Date.now(), hypothesisId: 'H1' }) }).catch(() => {})
-  }
-  // #endregion
   showScreen(id)
 }
 

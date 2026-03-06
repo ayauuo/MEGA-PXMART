@@ -56,4 +56,6 @@ interface ImportMetaEnv {
   readonly VITE_SHOOT_ONLY_HALF_PRESS?: string
   /** 強制拍攝不等待對焦：1/true 時到時機就拍，不管有無對焦成功 */
   readonly VITE_FORCE_CAPTURE_WITHOUT_AF?: string
+  /** 重拍時等待 Live View 新幀的逾時（毫秒，預設 2500；可設 500～10000） */
+  readonly VITE_LIVEVIEW_READY_TIMEOUT_MS?: string
 }

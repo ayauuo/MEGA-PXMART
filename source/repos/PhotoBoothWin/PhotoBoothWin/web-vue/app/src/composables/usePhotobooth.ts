@@ -158,26 +158,11 @@ export function usePhotobooth() {
   }
 
   function showScreen(name: ScreenName) {
-    // #region agent log
-    const prev = currentScreen.value
-    try {
-      const win = typeof window !== 'undefined' ? (window as unknown as { __logPhotobooth?: (p: unknown) => void }) : null
-      if (win?.__logPhotobooth) win.__logPhotobooth({ showScreen: name, prev })
-    } catch { /* noop */ }
-    fetch('http://127.0.0.1:7242/ingest/60461173-9774-483b-a750-822bb1590c42', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ location: 'usePhotobooth.ts:showScreen', message: 'showScreen_called', data: { name, prev }, timestamp: Date.now(), sessionId: 'debug-session', hypothesisId: 'H2,H3' }) }).catch(() => {})
-    // #endregion
     // 切到選版型／待機前先 reset，避免使用者看到預設版型閃現
     if (name === 'template') {
-      // #region agent log
-      const isTestBeforeReset = isTestSession.value
-      fetch('http://127.0.0.1:7242/ingest/60461173-9774-483b-a750-822bb1590c42', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': 'b8574e' }, body: JSON.stringify({ sessionId: 'b8574e', location: 'usePhotobooth.ts:showScreen:before_reset', message: 'template_screen_isTest_before_reset', data: { name, isTestSession: isTestBeforeReset }, timestamp: Date.now(), hypothesisId: 'H1', runId: 'post-fix' }) }).catch(() => {})
-      // #endregion
       const preserveTestSession = isTestSession.value
       resetSession()
       if (preserveTestSession) isTestSession.value = true
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/60461173-9774-483b-a750-822bb1590c42', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': 'b8574e' }, body: JSON.stringify({ sessionId: 'b8574e', location: 'usePhotobooth.ts:showScreen:after_reset', message: 'template_screen_isTest_after_reset', data: { name, isTestSession: isTestSession.value }, timestamp: Date.now(), hypothesisId: 'H1', runId: 'post-fix' }) }).catch(() => {})
-      // #endregion
       notifyBillAcceptorState(false)
     }
     if (name === 'idle') {

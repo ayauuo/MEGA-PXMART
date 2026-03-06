@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
 import SecretKeypad from '@/components/photobooth/SecretKeypad.vue'
 import { usePhotobooth } from '@/composables/usePhotobooth'
 
@@ -8,9 +8,10 @@ defineOptions({ name: 'ScreenIdle' })
 const { showScreen, selectTemplate, templates } = usePhotobooth()
 
 /** 點擊螢幕直接進入拍照頁，版型強制為第一個（不需投幣／紙鈔／選版型） */
-function goToShoot() {
+async function goToShoot() {
   const first = templates.value[0] ?? null
   if (first) selectTemplate(first)
+  await nextTick()
   showScreen('shoot')
 }
 
@@ -102,6 +103,11 @@ onUnmounted(() => {
 <style lang="scss" scoped>
 @use '@/styles/variables' as *;
 @use '@/styles/mixins' as *;
+
+/* 待機時 z-index 高於 Footer(100)，確保整屏可點、第二次點擊能進入拍照頁 */
+.screen--idle.active {
+  z-index: 150;
+}
 
 .screen--idle {
   position: absolute;

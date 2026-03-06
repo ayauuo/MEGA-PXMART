@@ -34,33 +34,7 @@ export function useTakePicture(selectedTemplate: () => Template | null) {
   /** 已為哪個版型設定過拍照區尺寸（同版型只載入第一次，後續沿用不重算） */
   const lastSizeTemplateId = ref<string | null>(null)
 
-  const shotCount = computed(() => {
-    const t = selectedTemplate()
-    const templateShotCount = t?.shotCount ?? 1
-    const value = 1
-    // #region agent log
-    fetch('http://127.0.0.1:7715/ingest/847eba88-1d81-412a-b6f7-5efadbb6cd4a', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-Debug-Session-Id': 'c7607e',
-      },
-      body: JSON.stringify({
-        sessionId: 'c7607e',
-        runId: 'pre-fix',
-        hypothesisId: 'H_shotCount',
-        location: 'useTakePicture.ts:shotCount',
-        message: 'shotCount_computed',
-        data: {
-          templateShotCount,
-          finalShotCount: value,
-        },
-        timestamp: Date.now(),
-      }),
-    }).catch(() => {})
-    // #endregion
-    return value
-  })
+  const shotCount = computed(() => 1)
 
   /** 從版型設定的擷取／顯示寬高（displayW/displayH 或 captureW/captureH），作為載入圖前的 fallback */
   function getTemplateCaptureSize(): { w: number; h: number } {

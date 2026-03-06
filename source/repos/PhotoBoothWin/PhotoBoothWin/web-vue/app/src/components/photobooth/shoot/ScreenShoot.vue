@@ -188,68 +188,18 @@ function shootLog(msg: string) {
   callHost('append_shoot_log', { msg }).catch(() => {})
 }
 
-function logWaitForLiveViewReady(reason: string, frameCountBeforeRestart: number) {
-  // #region agent log
-  fetch('http://127.0.0.1:7242/ingest/60461173-9774-483b-a750-822bb1590c42', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      location: 'ScreenShoot.vue:waitForLiveViewReady',
-      message: 'wait_ready_resolve',
-      data: {
-        reason,
-        frameCountBeforeRestart,
-        frameCountNow: liveViewFrameCount.value,
-        hasUrl: !!hostLiveViewDataUrl.value,
-      },
-      timestamp: Date.now(),
-      sessionId: 'debug-session',
-      runId: 'run1',
-      hypothesisId: 'H2',
-    }),
-  }).catch(() => {})
-  // #endregion
-}
+function logWaitForLiveViewReady(_reason: string, _frameCountBeforeRestart: number) {}
 
 async function stopLiveViewWithClear(reason: string) {
-  // #region agent log
-  fetch('http://127.0.0.1:7242/ingest/60461173-9774-483b-a750-822bb1590c42', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      location: 'ScreenShoot.vue:stopLiveViewWithClear',
-      message: 'before_stop_liveview',
-      data: { reason, hasUrl: !!hostLiveViewDataUrl.value, frameCount: liveViewFrameCount.value },
-      timestamp: Date.now(),
-      sessionId: 'debug-session',
-      runId: 'run1',
-      hypothesisId: 'H1',
-    }),
-  }).catch(() => {})
-  // #endregion
   clearHostLiveViewDataUrl(reason)
   await callHost('stop_liveview', {}).catch(() => {})
-  // #region agent log
-  fetch('http://127.0.0.1:7242/ingest/60461173-9774-483b-a750-822bb1590c42', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      location: 'ScreenShoot.vue:stopLiveViewWithClear',
-      message: 'after_stop_liveview',
-      data: { reason, hasUrl: !!hostLiveViewDataUrl.value, frameCount: liveViewFrameCount.value },
-      timestamp: Date.now(),
-      sessionId: 'debug-session',
-      runId: 'run1',
-      hypothesisId: 'H1',
-    }),
-  }).catch(() => {})
-  // #endregion
 }
 
-/** 等待 Live View 重啟後收到「新幀」，逾時 5 秒（只以 frameCount 變化為準，避免舊幀 hasUrl 誤判 ready） */
+/** 等待 Live View 重啟後收到「新幀」，逾時可設（預設 2.5 秒；僅以 frameCount 變化為準，避免舊幀 hasUrl 誤判 ready） */
 function waitForLiveViewReady(frameCountBeforeRestart: number): Promise<void> {
-  const timeoutMs = 5000
-  const intervalMs = 100
+  const raw = import.meta.env.VITE_LIVEVIEW_READY_TIMEOUT_MS
+  const timeoutMs = raw !== undefined && raw !== '' ? Math.max(500, Math.min(10000, parseInt(raw, 10) || 2500)) : 2500
+  const intervalMs = 50
   const deadline = Date.now() + timeoutMs
   return new Promise((resolve) => {
     const check = () => {
@@ -272,45 +222,8 @@ function waitForLiveViewReady(frameCountBeforeRestart: number): Promise<void> {
   })
 }
 
-// #region agent log
-function debugLog(location: string, message: string, data?: Record<string, unknown>, hypothesisId?: string) {
-  fetch('http://127.0.0.1:7242/ingest/60461173-9774-483b-a750-822bb1590c42', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      location,
-      message,
-      data: data ?? {},
-      timestamp: Date.now(),
-      sessionId: 'debug-session',
-      hypothesisId,
-    }),
-  }).catch(() => {})
-}
-// #endregion
-
 /** 使用 EDSDK 連拍：預覽與拍照皆由 C# 推送／take_one_shot_edsdk，無 webcam。僅拍 shotCount 張（通常 4 張）。 */
 async function startBurstShootEdsdk() {
-  // #region agent log
-  fetch('http://127.0.0.1:7715/ingest/847eba88-1d81-412a-b6f7-5efadbb6cd4a', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'X-Debug-Session-Id': 'c7607e',
-    },
-    body: JSON.stringify({
-      sessionId: 'c7607e',
-      runId: 'pre-fix',
-      hypothesisId: 'H_shotCount',
-      location: 'ScreenShoot.vue:startBurstShootEdsdk',
-      message: 'startBurstShootEdsdk_enter',
-      data: {
-        shotCountComputed: shotCount.value,
-      },
-      timestamp: Date.now(),
-    }),
-  }).catch(() => {})
-  // #endregion
   if (tp.isBurstShooting.value) {
     shootLog('startBurstShootEdsdk 忽略：已在連拍中')
     return
@@ -331,14 +244,8 @@ async function startBurstShootEdsdk() {
   for (let i = 0; i < count; i++) {
     currentShootingIndex.value = i
     shootLog(`連拍 第 ${i + 1}/${count} 張：setCoverFrameOnly → runCountdown`)
-    // #region agent log
-    debugLog('ScreenShoot.vue:startBurstShootEdsdk', 'COUNTDOWN_START', { shotIndex: i, total: count }, 'H1')
-    // #endregion
     tp.setCoverFrameOnly(i)
     await new Promise((r) => requestAnimationFrame(r))
-    // #region agent log
-    debugLog('ScreenShoot.vue:startBurstShootEdsdk', 'NO_WAIT_FOR_CAPTURE_BEFORE_COUNTDOWN', { shotIndex: i }, 'H1')
-    // #endregion
     try {
       await tp.runCountdownWithEvfAf(callHost, opts)
     } catch (e) {
@@ -359,10 +266,6 @@ async function startBurstShootEdsdk() {
       const urlFromHost = res?.thumbUrl ?? res?.dataUrl ?? ''
       const url = capturedMirroredUrl || urlFromHost
       console.log('[Vue] 收到 C# 回傳:', { hasDataUrl: !!res?.dataUrl, dataUrlLen: res?.dataUrl?.length, photoUrl: res?.photoUrl })
-      // #region agent log
-      debugLog('ScreenShoot.vue:startBurstShootEdsdk', 'TAKE_ONE_SHOT_RETURNED', { shotIndex: i, hasUrl: !!url }, 'H1')
-      if (!url) debugLog('ScreenShoot.vue:startBurstShootEdsdk', 'EMPTY_URL_NO_THUMB_UPDATE', { shotIndex: i, resultsLen: results.length }, 'H3')
-      // #endregion
       shootLog(`連拍 第 ${i + 1}/${count} 張 take_one_shot 回傳 url=${url ? '有' : '無'}`)
       if (url) {
         results[i] = url
@@ -371,21 +274,6 @@ async function startBurstShootEdsdk() {
       // 拍完後：短暫顯示剛拍的縮圖，再重啟 Live View，等恢復後再拍下一張
       if (i < count - 1) {
         await new Promise((r) => setTimeout(r, 300))
-        // #region agent log
-        fetch('http://127.0.0.1:7242/ingest/60461173-9774-483b-a750-822bb1590c42', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            location: 'ScreenShoot.vue:startBurstShootEdsdk',
-            message: 'skip_frontend_liveview_restart',
-            data: { shotIndex: i, frameCount: liveViewFrameCount.value, hasUrl: !!hostLiveViewDataUrl.value },
-            timestamp: Date.now(),
-            sessionId: 'debug-session',
-            runId: 'run1',
-            hypothesisId: 'H1',
-          }),
-        }).catch(() => {})
-        // #endregion
       }
     } catch (e) {
       shootLog(`連拍 第 ${i + 1} 張 take_one_shot 錯誤: ${e instanceof Error ? e.message : e}，後端應已回傳截圖／placeholder，若無則用框圖占位`)
@@ -398,21 +286,6 @@ async function startBurstShootEdsdk() {
       }
       if (i < count - 1) {
         await new Promise((r) => setTimeout(r, 300))
-        // #region agent log
-        fetch('http://127.0.0.1:7242/ingest/60461173-9774-483b-a750-822bb1590c42', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            location: 'ScreenShoot.vue:startBurstShootEdsdk',
-            message: 'skip_frontend_liveview_restart_error',
-            data: { shotIndex: i, frameCount: liveViewFrameCount.value, hasUrl: !!hostLiveViewDataUrl.value },
-            timestamp: Date.now(),
-            sessionId: 'debug-session',
-            runId: 'run1',
-            hypothesisId: 'H1',
-          }),
-        }).catch(() => {})
-        // #endregion
       }
     }
   }
@@ -427,21 +300,6 @@ async function startBurstShootEdsdk() {
   tp.currentMainIndex.value = 1
   thumbUrls.value = [...results]
   setCaptureResults([...results])
-  // #region agent log
-  fetch('http://127.0.0.1:7242/ingest/60461173-9774-483b-a750-822bb1590c42', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      location: 'ScreenShoot.vue:startBurstShootEdsdk',
-      message: 'burst_completed',
-      data: { resultsLen: results.length, filledCount, hasUrl: !!hostLiveViewDataUrl.value, frameCount: liveViewFrameCount.value },
-      timestamp: Date.now(),
-      sessionId: 'debug-session',
-      runId: 'run1',
-      hypothesisId: 'H2',
-    }),
-  }).catch(() => {})
-  // #endregion
 
   // 拍完照進入預覽時就啟動 Live View，讓第一次按重拍也能立刻顯示即時預覽（不 await，背景執行）
   if (hasWebView()) callHost('start_liveview', {}).catch(() => {})
@@ -458,36 +316,10 @@ async function startBurstShootEdsdk() {
 }
 
 async function onNext() {
-  // #region agent log
-  fetch('http://127.0.0.1:7242/ingest/60461173-9774-483b-a750-822bb1590c42', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      location: 'ScreenShoot.vue:onNext',
-      message: 'onNext_entry',
-      data: { shootingDone: tp.shootingDone.value, showFilterOptionsBefore: showFilterOptions.value },
-      timestamp: Date.now(),
-      hypothesisId: 'H2',
-    }),
-  }).catch(() => {})
-  // #endregion
   if (tp.shootingDone.value) {
     // 進入濾鏡模式前先停止 Live View，避免 60fps 更新 hostLiveViewDataUrl 導致主線程被佔滿、drawFilterPreview 的 rAF 永遠跑不到
     if (hasWebView()) await stopLiveViewWithClear('filter_enter').catch(() => {})
     showFilterOptions.value = true
-    // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/60461173-9774-483b-a750-822bb1590c42', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        location: 'ScreenShoot.vue:onNext',
-        message: 'onNext_set_showFilterOptions_true',
-        data: { showFilterOptionsAfter: showFilterOptions.value },
-        timestamp: Date.now(),
-        hypothesisId: 'H2',
-      }),
-    }).catch(() => {})
-    // #endregion
   }
 }
 
@@ -508,32 +340,7 @@ async function onAgain() {
   if (!hasWebView()) return
   const idx = tp.currentMainIndex.value - 1
   const shotCountVal = shotCount.value
-  // #region agent log
-  fetch('http://127.0.0.1:7242/ingest/60461173-9774-483b-a750-822bb1590c42', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ location: 'ScreenShoot.vue:onAgain:entry', message: 'onAgain entry', data: { idx, currentMainIndex: tp.currentMainIndex.value, thumbUrlsLen: thumbUrls.value.length, shotCount: shotCountVal, thumbHasUrlAtIdx: !!(thumbUrls.value[idx]) }, timestamp: Date.now(), sessionId: 'debug-session', runId: 'run1', hypothesisId: 'H1' }) }).catch(() => {})
-  // #endregion
   shootLog(`onAgain 開始 idx=${idx} slot=${tp.currentMainIndex.value}`)
-  // #region agent log
-  fetch('http://127.0.0.1:7242/ingest/60461173-9774-483b-a750-822bb1590c42', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      location: 'ScreenShoot.vue:onAgain',
-      message: 'debug_entry',
-      data: {
-        idx,
-        shootingDone: tp.shootingDone.value,
-        reshootSlotsSize: tp.reshootUsedSlots.value.size,
-        hasHostUrl: !!hostLiveViewDataUrl.value,
-        hostLen: hostLiveViewDataUrl.value?.length ?? 0,
-        liveViewFrameCount: liveViewFrameCount.value,
-        isReshootingBefore: isReshooting.value,
-      },
-      timestamp: Date.now(),
-      runId: 'run1',
-      hypothesisId: 'H1',
-    }),
-  }).catch(() => {})
-  // #endregion
   isReshooting.value = true
   // 重拍開頭先清空舊 Live View 幀，避免殘留畫面誤導判斷（UI 會進入「等待鏡頭…」狀態）
   clearHostLiveViewDataUrl('reshoot_start')
@@ -548,25 +355,6 @@ async function onAgain() {
   if (hostLiveViewDataUrl.value) {
     await new Promise((r) => setTimeout(r, 200))
   }
-  // #region agent log
-  fetch('http://127.0.0.1:7242/ingest/60461173-9774-483b-a750-822bb1590c42', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      location: 'ScreenShoot.vue:onAgain',
-      message: 'debug_before_countdown',
-      data: {
-        hasHostUrl: !!hostLiveViewDataUrl.value,
-        hostLen: hostLiveViewDataUrl.value?.length ?? 0,
-        liveViewFrameCount: liveViewFrameCount.value,
-        isReshooting: isReshooting.value,
-      },
-      timestamp: Date.now(),
-      runId: 'run1',
-      hypothesisId: 'H1',
-    }),
-  }).catch(() => {})
-  // #endregion
   try {
     await tp.runCountdownWithEvfAf(callHost, getCountdownOptions())
   } catch (e) {
@@ -586,17 +374,11 @@ async function onAgain() {
     const urlFromHost = res?.thumbUrl ?? res?.dataUrl ?? ''
     const url = capturedMirroredUrl || urlFromHost
     console.log('[Vue] 收到 C# 回傳 (onAgain):', { hasDataUrl: !!res?.dataUrl, dataUrlLen: res?.dataUrl?.length, photoUrl: res?.photoUrl })
-    // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/60461173-9774-483b-a750-822bb1590c42', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ location: 'ScreenShoot.vue:onAgain:after_take', message: 'take_one_shot_edsdk returned', data: { idx, hasUrl: !!url, urlLen: url?.length ?? 0 }, timestamp: Date.now(), sessionId: 'debug-session', runId: 'run1', hypothesisId: 'H2' }) }).catch(() => {})
-    // #endregion
     if (url) {
       // 依格號固定長度更新，避免 thumbUrls 為空或較短時 .map 無法放入補拍照片（見 debug.log burst_completed resultsLen:0）
       const next = Array.from({ length: shotCountVal }, (_, i) => (i === idx ? url : (thumbUrls.value[i] ?? '')))
       thumbUrls.value = next
       setCaptureResults([...next])
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/60461173-9774-483b-a750-822bb1590c42', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ location: 'ScreenShoot.vue:onAgain:after_update', message: 'after thumbUrls set', data: { idx, newThumbLen: thumbUrls.value.length, shotCount: shotCountVal, hasUrlAtIdx: !!(thumbUrls.value[idx]) }, timestamp: Date.now(), sessionId: 'debug-session', runId: 'post-fix', hypothesisId: 'H4' }) }).catch(() => {})
-      // #endregion
     }
   } catch (e) {
     console.error('EDSDK reshoot failed', e)
@@ -604,26 +386,6 @@ async function onAgain() {
   tp.reshootUsedSlots.value = new Set(
     Array.from(tp.reshootUsedSlots.value).concat(tp.currentMainIndex.value)
   )
-  // #region agent log
-  fetch('http://127.0.0.1:7242/ingest/60461173-9774-483b-a750-822bb1590c42', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      location: 'ScreenShoot.vue:onAgain',
-      message: 'debug_exit',
-      data: {
-        idx,
-        reshootSlotsSizeAfter: tp.reshootUsedSlots.value.size,
-        hasHostUrlAfter: !!hostLiveViewDataUrl.value,
-        hostLenAfter: hostLiveViewDataUrl.value?.length ?? 0,
-        liveViewFrameCountAfter: liveViewFrameCount.value,
-      },
-      timestamp: Date.now(),
-      runId: 'run1',
-      hypothesisId: 'H1',
-    }),
-  }).catch(() => {})
-  // #endregion
   isReshooting.value = false
 }
 
@@ -741,21 +503,6 @@ watch(
       }
       cameraError.value = null
       await callHost('start_liveview', {}).catch(() => {})
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/60461173-9774-483b-a750-822bb1590c42', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          location: 'ScreenShoot.vue:watchActive',
-          message: 'start_liveview_requested',
-          data: { hasUrl: !!hostLiveViewDataUrl.value, frameCount: liveViewFrameCount.value },
-          timestamp: Date.now(),
-          sessionId: 'debug-session',
-          runId: 'run1',
-          hypothesisId: 'H1',
-        }),
-      }).catch(() => {})
-      // #endregion
 
       if (!selectedTemplate.value) {
         await nextTick()

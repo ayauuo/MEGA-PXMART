@@ -29,13 +29,6 @@ async function uploadViaHttp(payload: { imageData?: string; videoData?: string }
 export function callHost(cmd: string, data: Record<string, unknown> = {}): Promise<Record<string, unknown>> {
   const win = typeof window !== 'undefined' ? window : null
   const hasWebView = !!(win && (win as unknown as { chrome?: { webview?: unknown } }).chrome?.webview)
-  // #region agent log
-  if (cmd === 'log_print_record') {
-    const fileName = typeof data.fileName === 'string' ? data.fileName : ''
-    const machineName = typeof data.machineName === 'string' ? data.machineName : ''
-    fetch('http://127.0.0.1:7242/ingest/60461173-9774-483b-a750-822bb1590c42', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ location: 'useHost.ts:callHost', message: 'log_print_record_call', data: { hasWebView, keys: Object.keys(data), fileNameLen: fileName.length, machineNameLen: machineName.length }, timestamp: Date.now(), sessionId: 'debug-session', runId: 'run1', hypothesisId: 'H1' }) }).catch(() => {})
-  }
-  // #endregion
   if (!hasWebView) {
     if (cmd === 'save_image') return Promise.resolve({ filePath: 'C:\\PhotoBooth\\Out\\mock.jpg' })
     if (cmd === 'upload') {
