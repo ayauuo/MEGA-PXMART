@@ -11,16 +11,16 @@ const TEMPLATES: Template[] = [
     sizeKey: '4x6',
     captureW: 1205,
     captureH: 1795,
-    stageSize: { maxWidth: '1000px', maxHeight: 'calc(100vh - 200px)' },
-    frameAspectRatio: '544/471',
+    stageSize: { maxWidth: 'captureW', maxHeight: 'captureH' },
+    frameAspectRatio: '1008/1175',
     width: 1205,
     height: 1795,
     slots: [
       // 只保留一格，相片只放一張
-      { x: 36, y: 34, w: 1007, h: 1223 },
+      { x: 104, y: 82, w: 1008, h: 1175 },
     ],
     // 換新框圖時設 displayW / displayH 為新圖的實際寬高（px），預覽與 video 會用這個尺寸
-    shootLayout: { layoutKey: 'bk01', captureW: 544, captureH: 471, displayW: 988, displayH: 724 },
+    shootLayout: { layoutKey: 'bk01', captureW: 1205, captureH: 1795, displayW: 1008, displayH: 1175 },
   },
   {
     id: 'bk02',

@@ -3,12 +3,12 @@ import { ref, onMounted, onUnmounted } from 'vue'
 import { usePhotobooth } from '@/composables/usePhotobooth'
 import { callHost } from '@/composables/useHost'
 
-const REQUIRED_TAPS = 15
-const TAP_RESET_MS = 1500
-const PASSWORD = '1234'
+const LONG_PRESS_MS = 5000
+const PASSWORD = '9347'
 
-const tapCount = ref(0)
-const lastTapAt = ref(0)
+let longPressTimer: ReturnType<typeof setTimeout> | null = null
+const longPressFired = ref(false)
+
 const open = ref(false)
 const showKeypad = ref(true)
 const showMenu = ref(false)
@@ -18,26 +18,53 @@ const uploadMessage = ref('')
 
 const { showScreen, resetSession } = usePhotobooth()
 
-function resetTap() {
-  tapCount.value = 0
-  lastTapAt.value = 0
+function clearLongPressTimer() {
+  if (longPressTimer != null) {
+    clearTimeout(longPressTimer)
+    longPressTimer = null
+  }
 }
 
-function onHotspotClick() {
-  const now = Date.now()
-  if (lastTapAt.value && now - lastTapAt.value > TAP_RESET_MS) {
-    tapCount.value = 0
+function openKeypad() {
+  open.value = true
+  showKeypad.value = true
+  showMenu.value = false
+  input.value = ''
+  error.value = ''
+}
+
+function onHotspotPointerDown() {
+  clearLongPressTimer()
+  longPressFired.value = false
+  longPressTimer = setTimeout(() => {
+    longPressTimer = null
+    longPressFired.value = true
+    openKeypad()
+  }, LONG_PRESS_MS)
+}
+
+function onHotspotPointerUp(e: PointerEvent) {
+  if (longPressFired.value) {
+    e.preventDefault()
+    e.stopPropagation()
+    longPressFired.value = false
   }
-  lastTapAt.value = now
-  tapCount.value += 1
-  if (tapCount.value >= REQUIRED_TAPS) {
-    tapCount.value = 0
-    open.value = true
-    showKeypad.value = true
-    showMenu.value = false
-    input.value = ''
-    error.value = ''
+  clearLongPressTimer()
+}
+
+function onHotspotPointerLeave(e: PointerEvent) {
+  if (longPressFired.value) {
+    e.preventDefault()
+    e.stopPropagation()
+    longPressFired.value = false
   }
+  clearLongPressTimer()
+}
+
+/** 阻止熱點區域的點擊冒泡，避免觸發待機畫面的「點擊進入拍照頁」 */
+function onHotspotClick(e: MouseEvent) {
+  e.preventDefault()
+  e.stopPropagation()
 }
 
 function close() {
@@ -47,7 +74,7 @@ function close() {
   input.value = ''
   error.value = ''
   uploadMessage.value = ''
-  resetTap()
+  clearLongPressTimer()
 }
 
 function appendDigit(digit: string) {
@@ -143,8 +170,22 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="secret-hotspot" @click="onHotspotClick" />
-  <div v-if="open" class="secret-overlay" role="dialog" aria-label="管理登入">
+  <div
+    class="secret-hotspot"
+    @pointerdown="onHotspotPointerDown"
+    @pointerup="onHotspotPointerUp"
+    @pointerleave="onHotspotPointerLeave"
+    @pointercancel="onHotspotPointerLeave"
+    @click="onHotspotClick"
+  />
+  <div
+    v-if="open"
+    class="secret-overlay"
+    role="dialog"
+    aria-label="管理登入"
+    @click.stop
+    @pointerdown.stop
+  >
     <!-- 密碼鍵盤 -->
     <div v-if="showKeypad" class="secret-keypad">
       <div class="secret-title">請輸入密碼</div>

@@ -562,6 +562,16 @@ namespace PhotoBoothWin.Bridge
                     case "shutdown":
                         try
                         {
+                            // 關機前先清除 C:\test 內所有檔案
+                            var testDir = @"C:\test";
+                            if (Directory.Exists(testDir))
+                            {
+                                foreach (var file in Directory.GetFiles(testDir))
+                                    File.Delete(file);
+                                foreach (var dir in Directory.GetDirectories(testDir))
+                                    Directory.Delete(dir, recursive: true);
+                            }
+
                             System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
                             {
                                 FileName = "shutdown",
