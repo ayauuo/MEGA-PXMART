@@ -5,12 +5,13 @@ defineOptions({ name: 'ScreenUploading' })
 <template>
   <div class="screen screen--uploading" role="region" aria-label="照片上傳中">
     <div class="uploading-content">
-      <img
+      <!-- uploadGif 已註解：僅顯示 background.jpg 直到合成完成 -->
+      <!-- <img
         class="uploading-gif"
         src="/assets/templates/uploadPage/uploadGif.gif"
         alt=""
         aria-hidden="true"
-      />
+      /> -->
     </div>
   </div>
 </template>
@@ -22,7 +23,7 @@ defineOptions({ name: 'ScreenUploading' })
 .screen--uploading {
   display: none;
   min-height: 100vh;
-  background-image: url('#{$path-templates}/uploadPage/background.png');
+  background-image: url('#{$path-templates}/uploadPage/background.jpg');
   background-repeat: no-repeat;
   background-position: center center;
   background-size: cover;
@@ -39,6 +40,7 @@ defineOptions({ name: 'ScreenUploading' })
   gap: $spacing-lg;
 }
 
+/* uploadGif 已註解
 .uploading-gif {
   max-width: min(90vw, 480px);
   max-height: min(80vh, 480px);
@@ -47,4 +49,5 @@ defineOptions({ name: 'ScreenUploading' })
   object-fit: contain;
   display: block;
 }
+*/
 </style>

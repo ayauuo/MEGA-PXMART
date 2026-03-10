@@ -436,6 +436,8 @@ export function usePhotobooth() {
       }
     }
     if (!captureResults.value.length) return
+    // 按下下一步後立即切換到上傳頁（background.jpg），直到合成完成再切到列印頁
+    showScreen('uploading')
     try {
       const canvas = document.createElement('canvas')
       canvas.width = tpl.width

@@ -12,6 +12,7 @@ import ScreenDbViewer from '@/components/photobooth/ScreenDbViewer.vue'
 import CameraTestPage from '@/components/photobooth/CameraTestPage.vue'
 import TestFilterPage from '@/components/testfillter/TestFilterPage.vue'
 import LoadingOverlay from '@/components/photobooth/LoadingOverlay.vue'
+import ScreenUploading from '@/components/photobooth/ScreenUploading.vue'
 import Footer from '@/components/photobooth/Footer.vue'
 
 const photobooth = usePhotobooth()
@@ -207,6 +208,7 @@ onUnmounted(() => {
       :is-active="currentScreen === 'shoot'"
     />
     <ScreenResult :class="{ active: currentScreen === 'result' }" />
+    <ScreenUploading :class="{ active: currentScreen === 'uploading' }" />
     <ScreenProcessing :class="{ active: currentScreen === 'processing' }" />
     <LoadingOverlay />
     <Footer />

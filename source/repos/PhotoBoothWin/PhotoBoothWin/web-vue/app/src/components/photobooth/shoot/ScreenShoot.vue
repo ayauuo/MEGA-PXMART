@@ -33,6 +33,8 @@ function doUpdateLeftPanelLeft() {
 
 /** 是否已做過第一次 left 計算（之後不再更新，版面已定型） */
 const hasInitialLeft = ref(false)
+/** 下一步按鈕處理中：防止重複點擊導致多次列印 */
+const isNextProcessing = ref(false)
 /** 左側面板是否已定位完成（定位前隱藏，避免使用者看到跑位） */
 const shootLayoutReady = ref(false)
 
@@ -326,13 +328,19 @@ async function onNext() {
 async function onFilterConfirm() {
   await stopLiveViewWithClear('filter_confirm').catch(() => {})
   await new Promise((r) => setTimeout(r, 100))
-  buildFinalOutput()
+  await buildFinalOutput()
 }
 
-/** 下一步按鈕點擊：直接合成並列印（已拿掉濾鏡步驟） */
-function handleNextClick() {
+/** 下一步按鈕點擊：直接合成並列印（已拿掉濾鏡步驟）；僅允許點擊一次，防止多次列印 */
+async function handleNextClick() {
   if (!tp.shootingDone.value) return
-  void onFilterConfirm()
+  if (isNextProcessing.value) return
+  isNextProcessing.value = true
+  try {
+    await onFilterConfirm()
+  } finally {
+    isNextProcessing.value = false
+  }
 }
 
 async function onAgain() {
@@ -463,6 +471,7 @@ watch(
       tp.currentMainIndex.value = 1
       showFilterOptions.value = false
       isReshooting.value = false
+      isNextProcessing.value = false
       cameraError.value = null
       if (hasWebView()) stopLiveViewWithClear('deactivate').catch(() => {})
       return
@@ -659,7 +668,13 @@ watch(
             :class="{ 'is-hidden': tp.reshootUsedSlots.value.has(tp.currentMainIndex.value) }"
             @click="onAgain"
           />
-          <button type="button" class="next-btn shoot-btn" @click="handleNextClick" />
+          <button
+            type="button"
+            class="next-btn shoot-btn"
+            :class="{ 'is-disabled': isNextProcessing }"
+            :disabled="isNextProcessing"
+            @click="handleNextClick"
+          />
         </div>
       </div>
     </div>
@@ -1041,6 +1056,14 @@ watch(
 
     .next-btn {
       background-image: url('#{$path-templates}/ShootPage/nextbutton.png');
+      cursor: pointer;
+
+      &.is-disabled,
+      &:disabled {
+        cursor: not-allowed;
+        opacity: 0.6;
+        pointer-events: none;
+      }
     }
   }
 }
